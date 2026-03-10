@@ -1,0 +1,135 @@
+// Schéma Prisma — POC UGC Factory Orchestra
+// Base : SQLite (local POC)
+// Pour passer en production : changer provider en "postgresql" et l'URL dans .env
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─────────────────────────────────────────
+// Utilisateurs back-office (Admin / Média)
+// ─────────────────────────────────────────
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // Hash bcrypt
+  firstName String
+  lastName  String
+  role      String   // "ADMIN" | "MEDIA" — SQLite ne supporte pas les enums natifs
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────
+// Campagnes UGC
+// ─────────────────────────────────────────
+model Campaign {
+  id              String       @id @default(cuid())
+  slug            String       @unique
+  title           String
+  deadline        DateTime
+  wordings        String?      // Optionnel
+  elementsToShow  String       // Éléments à montrer / ne pas montrer
+  childrenAllowed Boolean      @default(false)
+  reward          String       // Lot / rétribution (texte libre)
+  rewardAmount    Float?       // Valeur dotation / créateur en € (calcul budget)
+  contentCount    Int?         // Nombre de contenus à valider (cible)
+  products        String?      // JSON : [{name: string, reference: string}]
+  closedAt        DateTime?    // Clôture manuelle — prioritaire sur deadline
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  submissions Submission[]
+  emailLogs   EmailLog[]
+  photos      CampaignPhoto[]
+}
+
+// ─────────────────────────────────────────
+// Paramètres globaux de l'application
+// ─────────────────────────────────────────
+model AppSetting {
+  key   String @id   // ex : "annualBudget"
+  value String       // ex : "2000"
+}
+
+// ─────────────────────────────────────────
+// Photos de brief (galerie campagne)
+// ─────────────────────────────────────────
+model CampaignPhoto {
+  id         String   @id @default(cuid())
+  campaignId String
+  filename   String   // Chemin relatif depuis uploads/ (ex: "photos/campaignId/filename.jpg")
+  createdAt  DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────
+// Candidatures (soumissions membres)
+// ─────────────────────────────────────────
+model Submission {
+  id         String @id @default(cuid())
+  campaignId String
+
+  // Données personnelles du participant
+  firstName String
+  lastName  String
+  email     String
+  phone     String
+  address   String
+
+  // Vidéo
+  videoPath String // Chemin relatif depuis uploads/ (ex: "videos/campaignId/filename.mp4")
+
+  // Workflow statut
+  // PENDING → VIDEO_VIEWED → REJECTED (fin)
+  //                        → VALIDATED_NO_CONTRACT → VALIDATED → COMPLETED
+  status String @default("PENDING")
+  // Valeurs : PENDING | VIDEO_VIEWED | REJECTED | VALIDATED_NO_CONTRACT | VALIDATED | COMPLETED
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaign  Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contract  Contract?
+  emailLogs EmailLog[]
+}
+
+// ─────────────────────────────────────────
+// Contrats (cession de droits)
+// ─────────────────────────────────────────
+model Contract {
+  id           String  @id @default(cuid())
+  submissionId String  @unique
+  token        String  @unique // Token unique pour l'URL de signature (/contrat/:token)
+  pdfPath      String? // Chemin vers le PDF généré (null jusqu'à la signature)
+  signedAt     DateTime?
+  expiresAt    DateTime? // Optionnel — si dépassé, archived = true
+  archived     Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────
+// Logs d'emails (simulation — pas d'envoi réel)
+// ─────────────────────────────────────────
+model EmailLog {
+  id             String  @id @default(cuid())
+  type           String  // INVITATION | REJECTION | ACCEPTANCE | CONTRACT_SENT | RETRIBUTION_SENT
+  recipientEmail String
+  submissionId   String?
+  campaignId     String?
+  summary        String  // Résumé du contenu de l'email
+
+  createdAt DateTime @default(now())
+
+  submission Submission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+  campaign   Campaign?   @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+}

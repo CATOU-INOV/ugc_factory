@@ -1,0 +1,19 @@
+node_modules/
+server/node_modules/
+client/node_modules/
+server/prisma/dev.db
+server/prisma/dev.db-journal
+# Fichiers uploadés
+server/uploads/videos/
+server/uploads/photos/
+server/uploads/contracts/*.pdf
+# Garder la structure des dossiers
+!server/uploads/.gitkeep
+!server/uploads/contracts/.gitkeep
+client/dist/
+.env
+.env.local
+*.log
+**/.DS_Store
+.claude/
+.agents/
