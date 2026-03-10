@@ -56,6 +56,9 @@ Key models and relations:
 - `Submission` → `Contract?`, `EmailLog[]`
 - `AppSetting` — key/value store (currently: `annualBudget`)
 - `Campaign.products` is a JSON string (`[{name, reference}]`), parsed manually in controllers
+- `Campaign.closedAt DateTime?` — when set, campaign is treated as past regardless of `deadline`. Set via `PUT /api/campaigns/:id/close`.
+- `Campaign.contentCount Int?` — target number of validated submissions. Used for budget prediction and quota-reached notifications.
+- `Campaign.rewardAmount Float?` — dotation value per creator in €. Used for budget prediction.
 - Roles stored as `String` (SQLite has no enum type): `"ADMIN"` | `"MEDIA"`
 
 **Submission status workflow** (strict transitions enforced in `submissionController.js`):
@@ -90,9 +93,17 @@ Vite proxies `/api/*` to `http://localhost:3001` in dev (configured in `client/v
 - `admin@orchestra.fr` / `admin123` → `/admin`
 - `media@orchestra.fr` / `media123` → `/media`
 
+### Budget logic (`AdminHome.jsx`)
+- **Engagé** (predictive) = `sum(contentCount × rewardAmount)` across all campaigns — planned budget if all dotations are sent.
+- **Dépensé** (actual) = `sum(completedCount × rewardAmount)` — retributions effectively sent (COMPLETED submissions only).
+- **Restant** = `annualBudget − engaged`. Both active and past campaigns are included.
+- A green "Objectif atteint" badge appears on a campaign row when `validatedCount + completedCount >= contentCount`.
+- Same notification appears as a banner in `CampaignActivePage.jsx`, computed from the live submissions list.
+
 ### Key constraints
-- Max 3 active campaigns simultaneously (enforced in `campaignController.createCampaign`)
+- Max 3 active campaigns simultaneously (enforced in `campaignController.createCampaign`). Active = `closedAt IS NULL AND deadline > now`.
 - Campaign photos: max 5 per campaign, JPEG/PNG only
 - Video uploads: validated client-side (`useVideoValidation`) and stored server-side under the campaign's folder
 - Media role users can only download videos for `COMPLETED` submissions
 - All UI text is in French
+- Product references in campaign pages link to `https://fr.shop-orchestra.com/fr/search?q=<reference>`
