@@ -46,6 +46,8 @@ model Campaign {
   submissions Submission[]
   emailLogs   EmailLog[]
   photos      CampaignPhoto[]
+
+  @@index([deadline])
 }
 
 // ─────────────────────────────────────────
@@ -97,6 +99,9 @@ model Submission {
   campaign  Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   contract  Contract?
   emailLogs EmailLog[]
+
+  @@index([campaignId])
+  @@index([status])
 }
 
 // ─────────────────────────────────────────
@@ -132,4 +137,7 @@ model EmailLog {
 
   submission Submission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
   campaign   Campaign?   @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@index([type])
 }

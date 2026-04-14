@@ -242,6 +242,7 @@ export default function CampaignActivePage() {
   const { id } = useParams()
   const [campaign, setCampaign] = useState(null)
   const [submissions, setSubmissions] = useState([])
+  const [submissionsTotal, setSubmissionsTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState(null)
@@ -254,12 +255,13 @@ export default function CampaignActivePage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [camp, subs] = await Promise.all([
+      const [camp, subsData] = await Promise.all([
         getCampaignById(id),
         getSubmissions(id),
       ])
       setCampaign(camp)
-      setSubmissions(subs)
+      setSubmissions(subsData.submissions)
+      setSubmissionsTotal(subsData.total)
     } finally {
       setLoading(false)
     }
@@ -314,6 +316,18 @@ export default function CampaignActivePage() {
             {validatedTotal} candidature{validatedTotal > 1 ? 's' : ''} validée{validatedTotal > 1 ? 's' : ''} sur {campaign.contentCount} prévues.
             Vous pouvez clôturer la campagne.
           </div>
+        </div>
+      )}
+
+      {/* Avertissement si données tronquées */}
+      {submissionsTotal > submissions.length && (
+        <div className="flex items-start gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800" role="alert">
+          <svg className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <span>
+            Seules les <strong>{submissions.length} candidatures les plus récentes</strong> sont affichées sur {submissionsTotal} au total.
+          </span>
         </div>
       )}
 

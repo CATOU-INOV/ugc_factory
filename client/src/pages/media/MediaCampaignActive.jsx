@@ -163,12 +163,12 @@ export default function MediaCampaignActive() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [camp, subs] = await Promise.all([
+      const [camp, subsData] = await Promise.all([
         getCampaignById(id),
         getSubmissions(id),
       ])
       setCampaign(camp)
-      setSubmissions(subs.filter(s => s.status === 'PENDING' || s.status === 'COMPLETED'))
+      setSubmissions(subsData.submissions.filter(s => s.status === 'PENDING' || s.status === 'COMPLETED'))
     } finally {
       setLoading(false)
     }

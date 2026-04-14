@@ -19,14 +19,22 @@ const STATUS_TRANSITIONS = {
   COMPLETED: [],
 }
 
+const SUBMISSIONS_LIMIT = 500
+
 export async function listSubmissions(req, res) {
   const { campaignId } = req.params
-  const [campaign, submissions] = await Promise.all([
+  const limit = Math.min(parseInt(req.query.limit, 10) || SUBMISSIONS_LIMIT, SUBMISSIONS_LIMIT)
+  const offset = parseInt(req.query.offset, 10) || 0
+
+  const [campaign, total, submissions] = await Promise.all([
     prisma.campaign.findUnique({ where: { id: campaignId }, select: { deadline: true } }),
+    prisma.submission.count({ where: { campaignId } }),
     prisma.submission.findMany({
       where: { campaignId },
       include: { contract: { select: { id: true, token: true, signedAt: true, pdfPath: true } } },
       orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
     }),
   ])
 
@@ -46,7 +54,7 @@ export async function listSubmissions(req, res) {
     }
   }
 
-  res.json(submissions)
+  res.json({ submissions, total, limit, offset })
 }
 
 export async function createSubmission(req, res) {

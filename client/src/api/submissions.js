@@ -2,6 +2,7 @@ import api from './axios.js'
 
 export const getSubmissions = (campaignId) =>
   api.get(`/submissions/campaign/${campaignId}`).then(r => r.data)
+  // r.data = { submissions, total, limit, offset }
 
 export const createSubmission = (campaignId, formData, config = {}) =>
   api.post(`/submissions/campaign/${campaignId}`, formData, {

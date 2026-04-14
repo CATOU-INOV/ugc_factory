@@ -13,6 +13,7 @@ function formatDate(d) {
 export default function ContractsPage() {
   const [searchParams] = useSearchParams()
   const [contracts, setContracts] = useState([])
+  const [contractsTotal, setContractsTotal] = useState(0)
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -31,7 +32,8 @@ export default function ContractsPage() {
       if (nameSearch?.trim()) params.search = nameSearch.trim()
       if (campId) params.campaignId = campId
       const data = await getContracts(params)
-      setContracts(data)
+      setContracts(data.contracts)
+      setContractsTotal(data.total)
     } finally {
       setLoading(false)
     }
@@ -139,8 +141,13 @@ export default function ContractsPage() {
           <div className="p-6 border-b border-gray-100">
             <h2 className="font-display font-bold uppercase text-gray-900 text-lg">
               Résultats
-              <span className="ml-2 badge bg-gray-100 text-gray-600">{contracts.length}</span>
+              <span className="ml-2 badge bg-gray-100 text-gray-600">{contractsTotal > contracts.length ? `${contracts.length}/${contractsTotal}` : contracts.length}</span>
             </h2>
+            {contractsTotal > contracts.length && (
+              <p className="mt-1 text-xs text-amber-700">
+                Seuls les {contracts.length} contrats les plus récents sont affichés sur {contractsTotal} au total.
+              </p>
+            )}
           </div>
 
           {contracts.length === 0 ? (

@@ -27,11 +27,12 @@ function formatDate(d) {
 
 export default function EmailLogsPage() {
   const [logs, setLogs] = useState([])
+  const [logsTotal, setLogsTotal] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     getEmailLogs()
-      .then(setLogs)
+      .then(data => { setLogs(data.logs); setLogsTotal(data.total) })
       .finally(() => setLoading(false))
   }, [])
 
@@ -52,7 +53,7 @@ export default function EmailLogsPage() {
         <div className="p-6 border-b border-gray-100">
           <h2 className="font-display font-bold uppercase text-gray-900 text-lg">
             Événements
-            <span className="ml-2 badge bg-gray-100 text-gray-600">{logs.length}</span>
+            <span className="ml-2 badge bg-gray-100 text-gray-600">{logsTotal > logs.length ? `${logs.length}/${logsTotal}` : logs.length}</span>
           </h2>
         </div>
 

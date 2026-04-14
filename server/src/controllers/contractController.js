@@ -22,17 +22,25 @@ export async function listContracts(req, res) {
     where.submission.campaignId = campaignId
   }
 
-  const contracts = await prisma.contract.findMany({
-    where,
-    include: {
-      submission: {
-        include: { campaign: { select: { id: true, title: true } } },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-  })
+  const limit = Math.min(parseInt(req.query.limit, 10) || 200, 200)
+  const offset = parseInt(req.query.offset, 10) || 0
 
-  res.json(contracts)
+  const [total, contracts] = await Promise.all([
+    prisma.contract.count({ where }),
+    prisma.contract.findMany({
+      where,
+      include: {
+        submission: {
+          include: { campaign: { select: { id: true, title: true } } },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    }),
+  ])
+
+  res.json({ contracts, total, limit, offset })
 }
 
 export async function getContractByToken(req, res) {
